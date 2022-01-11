@@ -1,0 +1,12 @@
+int a=5;
+int b,c;
+
+b = 8 if a==5 else 0;
+
+c = 0 if a!=5 else 10;
+
+write(a);
+write(b);
+write(c);
+
+write(100 if (b==8) && (c==10) else 0);

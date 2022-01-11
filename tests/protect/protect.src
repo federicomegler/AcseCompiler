@@ -1,0 +1,21 @@
+int a =5;
+int b=0;
+
+protect {
+  write(1);
+  
+  protect{
+    b = a / 2;
+    write(222);
+  }
+  with{
+    write(0);
+  }
+  b = a/0;
+  b = a/(a-5);
+  write(0);
+}
+with{
+  write(1111);
+}
+

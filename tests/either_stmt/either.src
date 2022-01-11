@@ -1,0 +1,18 @@
+int a=5;
+
+read(a);
+
+either {
+  read(a);
+  a = a + 100;
+  write(a);
+}
+or{
+  if(a == 100)
+    write(a +2 );
+  else
+    write(0);
+}
+on a == 25 / 5;
+
+write(123);

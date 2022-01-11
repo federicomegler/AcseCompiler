@@ -1,0 +1,12 @@
+int a;
+
+read(a);
+
+switch(a){
+  case 1: write(a);
+  case 2: { write(a); }
+  case 3: { write(100); break; write(a);}
+  default: write(0);
+}
+
+

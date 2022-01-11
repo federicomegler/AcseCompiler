@@ -1,0 +1,21 @@
+int a=0;
+int b=70;
+int c[2];
+int d[2];
+
+c[0]=5;
+c[1]=6;
+
+
+
+write(a);
+
+alias a, b {
+  write(a);
+}
+
+alias d, c{
+  write(red(c));
+}
+
+write(a);

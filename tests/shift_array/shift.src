@@ -1,0 +1,9 @@
+int a[5];
+int i;
+for(i=0; i<5; i=i+1)
+  a[i] = i;
+
+a << 8;
+
+for(i=0; i<5; i=i+1)
+  write(a[i]);

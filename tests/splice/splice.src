@@ -1,0 +1,12 @@
+int a=32;
+int b=1;
+int k=28;
+int r;
+
+r = a$b@k;
+
+write(r);
+k=0;
+write(a$b@k);
+k=32;
+write(a$b@k);

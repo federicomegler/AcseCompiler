@@ -1,0 +1,12 @@
+int a=0;
+int b=7;
+int c=0;
+
+
+c = merge 2, 5*8, a;
+
+write(c);
+
+write(merge 1,2,2);
+
+write(merge b+1, a, 1);

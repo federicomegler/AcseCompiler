@@ -1,0 +1,27 @@
+int v1[3];
+int v2[1];
+int v3[40];
+int x = 10;
+
+//v1 encodes 110
+v1[2] = 15;
+v1[1] = 79;
+v1[0] = 0;
+
+//v2 encodes 1
+v2[0] = 1;
+//v3 encodes -2ˆ(31)
+
+v3[31]=37;
+
+write((bit)v1);
+//output 6
+
+write((bit)v2);
+//output 1
+
+write((bit)v3);
+//output -2ˆ(31)
+
+write((bit)x);
+//output 10

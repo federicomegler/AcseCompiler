@@ -123,6 +123,7 @@ typedef struct t_try_catch_statement
 
 } t_try_catch_statement;
 
+
 typedef struct t_switch_statement{
   //This is the register that contains the value for the comparison
   int cmp_register;

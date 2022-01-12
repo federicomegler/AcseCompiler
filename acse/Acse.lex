@@ -115,7 +115,10 @@ ID       [a-zA-Z_][a-zA-Z0-9_]*
 "protect"         { return PROTECT; }
 "with"            { return WITH; }
 "merge"           { return MERGE; }
-"(bit)"             { return BIT; }
+"(bit)"           { return BIT; }
+"foreach"         { return FOREACH; }
+"in"              { return IN; }
+"every"           { return EVERY; }
 
 
 

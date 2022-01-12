@@ -31,6 +31,7 @@
  *        - protect with statement
  *        - merge operator
  *        - cast_array op
+ *        - foreach statement (with "every" statement)
  *
 */
 
@@ -191,6 +192,9 @@ extern void yyerror(const char*);
 %token <switch_stmt> SWITCH
 %token <label> PROTECT
 %token <label> WITH
+%token <while_stmt> FOREACH
+%token <while_stmt> EVERY
+%token <intval>IN
 
 %type <expr> exp
 %type <decl> declaration
@@ -338,6 +342,7 @@ statement   : assign_statement SEMI      { /* does nothing */ }
             | undo_if_statement SEMI     { /* does nothing */ }
             | break_statement SEMI       { /* does nothing */ }
             | vec_xor_statement SEMI     { /* does nothing */ }
+            | foreach_every_statement    { /* does nothing */ }
             | alias_statement            { /* does nothing */ }
             | protect_with_statement     { /* does nothing */ }
             | SEMI            { gen_nop_instruction(program); }
@@ -932,6 +937,74 @@ break_statement: BREAK
                   gen_bt_instruction(program, ((t_switch_statement*)LDATA(getFirst(switchStack)))->switch_end, 0);
                 }
                }
+;
+
+
+foreach_every_statement : FOREACH IDENTIFIER IN IDENTIFIER
+                          {
+                            t_axe_variable* elem = getVariable(program, $2);
+                            t_axe_variable* array = getVariable(program, $4);
+
+                            if(elem == NULL || array == NULL || elem->isArray || ! array->isArray)
+                              notifyError(AXE_INVALID_VARIABLE);
+                            
+                            $3 = gen_load_immediate(program, 0);
+
+                            t_axe_expression index_exp = create_expression($3, REGISTER);
+                            int load_reg = loadArrayElement(program, $4, index_exp);
+                            /* get register where value of elem variable is stored */
+                            int elem_reg = get_symbol_location(program, $2, 0);
+                            /* move the value from load_reg into elem_reg */
+                            gen_andb_instruction(program, elem_reg, load_reg, load_reg, CG_DIRECT_ALL);
+
+                            $1.label_condition = assignNewLabel(program);
+                            $1.label_end = newLabel(program);
+
+                          }
+                          code_block EVERY exp DO
+                          {
+                            if ($8.expression_type != IMMEDIATE) {
+                            notifyError(AXE_INVALID_EXPRESSION);
+                            }
+                            t_axe_variable *array = getVariable(program, $4);
+                            if ($8.value <= 1 || $8.value >= array->arraySize) {
+                            notifyError(AXE_INVALID_EXPRESSION);
+                            }
+
+                            $7.label_end = newLabel(program);
+                            gen_bt_instruction(program, $7.label_end, 0);
+                            $7.label_condition = assignNewLabel(program);
+
+                          }
+                          code_block
+                          {
+                            assignLabel(program, $7.label_end);
+                            /* increment index */
+                            gen_addi_instruction(program, $3, $3, 1);
+
+                            /* check exit condition */
+                            int tmp_reg = getNewRegister(program);
+                            t_axe_variable *array = getVariable(program, $4);
+                            gen_subi_instruction(program, tmp_reg, $3, array->arraySize);
+                            gen_beq_instruction(program, $1.label_end, 0);
+
+                            /* load element */
+                            t_axe_expression index_exp = create_expression($3, REGISTER);
+                            int load_reg = loadArrayElement(program, $4, index_exp);
+                            int elem_reg = get_symbol_location(program, $2, 0);
+                            gen_andb_instruction(program, elem_reg, load_reg, load_reg, CG_DIRECT_ALL);
+
+                            /* check which code block should be executed */
+                            /* index % k == 0 ...but % operator is not available */
+                            /* (index / k) * k - index == 0 */
+                            gen_divi_instruction(program, tmp_reg, $3, $8.value);
+                            gen_muli_instruction(program, tmp_reg, tmp_reg, $8.value);
+                            gen_sub_instruction(program, tmp_reg, tmp_reg, $3, CG_DIRECT_ALL);
+
+                            gen_beq_instruction(program, $7.label_condition, 0);
+                            gen_bt_instruction(program, $1.label_condition, 0);
+                            assignLabel(program, $1.label_end);
+                          }
 ;
 
 either_or_statement : EITHER

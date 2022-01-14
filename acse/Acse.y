@@ -32,6 +32,7 @@
  *        - merge operator
  *        - cast_array op
  *        - foreach statement (with "every" statement)
+ *        - assert statement
  *
 */
 
@@ -180,6 +181,7 @@ extern void yyerror(const char*);
 %token ALIAS
 %token MERGE
 %token BIT
+%token ASSERT
 
 %token <loopdec_stmt> LOOPDEC
 %token BY
@@ -348,6 +350,7 @@ statement   : assign_statement SEMI      { /* does nothing */ }
             | vec_xor_statement SEMI     { /* does nothing */ }
             | foreach_every_statement    { /* does nothing */ }
             | alias_statement            { /* does nothing */ }
+            | assert_statement SEMI      { /* does nothing */ }
             | protect_with_statement     { /* does nothing */ }
             | SEMI            { gen_nop_instruction(program); }
 ;
@@ -804,7 +807,7 @@ loop_decreasing_statement : LOOPDEC IDENTIFIER BY
                             code_block WHILE LPAR exp RPAR
                             {
                               handle_binary_comparison(program, $10, create_expression(REG_0, REGISTER), _EQ_);
-                              gen_beq_instruction(program, $1.label_loop, 0);
+                              gen_bne_instruction(program, $1.label_loop, 0);
                               assignLabel(program, $1.label_end);
 
                               free($2);
@@ -979,6 +982,22 @@ break_statement: BREAK
                }
 ;
 
+
+assert_statement : ASSERT LPAR exp RPAR
+                  {
+                    if($3.expression_type == IMMEDIATE){
+                      if($3.value == 0)
+                        gen_halt_instruction(program);
+                    }
+                    else{
+                      t_axe_label* bypass = newLabel(program);
+                      handle_binary_comparison(program, $3, create_expression(REG_0, REGISTER), _EQ_);
+                      gen_beq_instruction(program, bypass, 0);
+                      gen_halt_instruction(program);
+                      assignLabel(program, bypass);
+                    }
+                  }
+;
 
 foreach_every_statement : FOREACH IDENTIFIER IN IDENTIFIER
                           {

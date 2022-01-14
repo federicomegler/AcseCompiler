@@ -1,0 +1,17 @@
+int a,b,c;
+
+a=1;
+b=2;
+c=0;
+
+assert(a);
+write(1);
+
+assert(b +2);
+write(2);
+
+assert(1);
+write(3);
+
+assert(c);
+write(0);

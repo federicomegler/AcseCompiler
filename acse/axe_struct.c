@@ -122,7 +122,18 @@ t_either_or_statement create_either_statement()
 }
 
 
+t_loopdecreasing_statement create_loop_decreasing_statement()
+{
 
+  t_loopdecreasing_statement statement;
+
+  statement.label_loop = NULL;
+  statement.label_end = NULL;
+  statement.label_check = NULL;
+
+  return statement;
+
+}
 
 
 t_for_statement create_for_statement()

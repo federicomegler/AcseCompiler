@@ -119,6 +119,8 @@ ID       [a-zA-Z_][a-zA-Z0-9_]*
 "foreach"         { return FOREACH; }
 "in"              { return IN; }
 "every"           { return EVERY; }
+"loop_decreasing" { return LOOPDEC; }
+"by"              { return BY; }
 
 
 

@@ -132,7 +132,7 @@ extern int yylex(void);
 extern void yyerror(const char*);
 
 %}
-%expect 1
+%expect 3
 
 /*=========================================================================
                           SEMANTIC RECORDS
@@ -149,6 +149,7 @@ extern void yyerror(const char*);
    t_for_statement for_stmt;
    t_either_or_statement either_stmt;
    t_switch_statement* switch_stmt;
+   t_loopdecreasing_statement loopdec_stmt;
 }
 /*=========================================================================
                                TOKENS
@@ -174,12 +175,14 @@ extern void yyerror(const char*);
 %token VEC_XOR
 %token CASE DEFAULT BREAK
 %token COLON
-%token TRY CATCH
-%token THROW
+//%token TRY CATCH
+//%token THROW
 %token ALIAS
 %token MERGE
 %token BIT
 
+%token <loopdec_stmt> LOOPDEC
+%token BY
 %token <label> DO
 %token <while_stmt> WHILE
 %token <for_stmt> FOR
@@ -195,6 +198,7 @@ extern void yyerror(const char*);
 %token <while_stmt> FOREACH
 %token <while_stmt> EVERY
 %token <intval>IN
+
 
 %type <expr> exp
 %type <decl> declaration
@@ -354,6 +358,7 @@ control_statement : if_statement         { /* does nothing */ }
             | either_or_statement SEMI   { /* does nothing */ }
             | do_while_statement SEMI    { /* does nothing */ }
             | return_statement SEMI      { /* does nothing */ }
+            | loop_decreasing_statement SEMI { /* does nothing */ }
             | switch_statement           { /* does nothing */ }
 ;
 
@@ -769,7 +774,42 @@ undo_if_statement: UNDO IDENTIFIER IF exp
                   }
 ;
 
+loop_decreasing_statement : LOOPDEC IDENTIFIER BY 
+                            {
+                              
+                              $1 = create_loop_decreasing_statement();
+                              $1.label_end = newLabel(program);
+                              $1.label_check = newLabel(program);
+                              gen_bt_instruction(program, $1.label_check, 0);
+                              $1.label_loop = assignNewLabel(program);
 
+                              t_axe_variable* v_counter = getVariable(program, $2);
+                              
+                              if(v_counter == NULL || v_counter->isArray)
+                                notifyError(AXE_INVALID_VARIABLE);
+
+                            }
+                            exp
+                            {
+                              int r_counter = get_symbol_location(program, $2, 0);
+                              if($5.expression_type == IMMEDIATE)
+                                gen_subi_instruction(program, r_counter, r_counter, $5.value);
+                              else
+                                gen_sub_instruction(program, r_counter, r_counter, $5.value, CG_DIRECT_ALL);
+
+                              assignLabel(program, $1.label_check);
+                              handle_binary_comparison(program, create_expression(r_counter, REGISTER), create_expression(REG_0, REGISTER), _LTEQ_);
+                              gen_bne_instruction(program, $1.label_end, 0);
+                            }
+                            code_block WHILE LPAR exp RPAR
+                            {
+                              handle_binary_comparison(program, $10, create_expression(REG_0, REGISTER), _EQ_);
+                              gen_beq_instruction(program, $1.label_loop, 0);
+                              assignLabel(program, $1.label_end);
+
+                              free($2);
+                            }
+;
 
 for_statement : FOR
                 {

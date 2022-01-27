@@ -79,3 +79,29 @@ steps:
    
 The `make tests` command only runs the ACSE compiler and the assembler, you
 will have to invoke the MACE simulator manually.
+
+# Extensions 
+
+During the course of Formal Languages and Compilers, as an exercise, I created some extensions listed below:
+ - FOR loop
+ - Shift left statement
+ - Conditional exp
+ - Splice operator
+ - Undo_if statement
+ - Assign array
+ - Either-or statement
+ - Scalar product operator
+ - Reduce array ( red(...) )
+ - Op. vector range (a = b[ start: end ])
+ - Op. +=
+ - Op [*] (fake multiplication)
+ - Switch case statement
+ - Vec_xor operator
+ - Alias statement
+ - Protect with statement
+ - Merge operator
+ - Cast_array op
+ - Foreach statement (with "every" statement)
+ - Assert statement
+
+

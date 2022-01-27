@@ -63,6 +63,7 @@
 #include "axe_reg_alloc.h"
 #include "reg_alloc_constants.h"
 #include "axe_io_manager.h"
+
 #ifndef NDEBUG
 #  include "axe_debug.h"
 #endif
@@ -124,6 +125,8 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 t_list* switchStack = NULL;
 
 t_list* protectStack = NULL;
+
+t_list* iterationStack = NULL;
 
 char* aliased = NULL;
 char* alias = NULL;
@@ -200,6 +203,7 @@ extern void yyerror(const char*);
 %token <while_stmt> FOREACH
 %token <while_stmt> EVERY
 %token <intval>IN
+%token <while_stmt> ITER
 
 
 %type <expr> exp
@@ -362,6 +366,7 @@ control_statement : if_statement         { /* does nothing */ }
             | do_while_statement SEMI    { /* does nothing */ }
             | return_statement SEMI      { /* does nothing */ }
             | loop_decreasing_statement SEMI { /* does nothing */ }
+            | iterate_statement          { /* does nothing */ }
             | switch_statement           { /* does nothing */ }
 ;
 
@@ -401,6 +406,8 @@ assign_statement : IDENTIFIER LSQUARE exp RSQUARE ASSIGN exp
                int old;
 
               char* identifier = (alias != NULL && strcmp(alias, $1)==0) ? aliased : $1;
+              int index=0;
+              int found=0;
 
                /* in order to assign a value to a variable, we have to
                 * know where the variable is located (i.e. in which register).
@@ -414,20 +421,47 @@ assign_statement : IDENTIFIER LSQUARE exp RSQUARE ASSIGN exp
                 * the variable with $1 as identifier */
 
                /* get the location of the symbol with the given ID. */
-               location = get_symbol_location(program, identifier, 0);
-              
-               old = get_symbol_location(program, strcat(identifier, "_i"),0);
+
+               if(getVariable(program, $1)->isArray && iterationStack != NULL){
+                      int len = getLength(iterationStack);
+                      int i=0;
+                      while(i<len){
+                        t_iteration_statement* iter = ((t_iteration_statement*)LDATA(getElementAt(iterationStack, i)));
+                        if(strcmp($1, iter->ID)==0){
+                          location = loadArrayElement(program, iter->ID, create_expression(iter->index, REGISTER));
+                          index = iter->index;
+                          found =1;
+                          break;
+                      }
+                      i=i+1;
+                    }
+                }
+                else{
+
+                  location = get_symbol_location(program, identifier, 0);
+                  old = get_symbol_location(program, strcat(identifier, "_i"),0);
+                  gen_add_instruction(program, old, REG_0, location, CG_DIRECT_ALL);
+                  if ($3.expression_type == IMMEDIATE)
+                    gen_move_immediate(program, location, $3.value);
+                  else
+                    gen_add_instruction(program,
+                                        location,
+                                        REG_0,
+                                        $3.value,
+                                        CG_DIRECT_ALL);
+
+                }
+
+                  if(found == 1){
+                    if ($3.expression_type == IMMEDIATE)
+                      gen_move_immediate(program, location, $3.value);
+                    else
+                      gen_add_instruction(program, location, REG_0, $3.value, CG_DIRECT_ALL);
+                    //TODO fix this assignment
+                    storeArrayElement(program, $1,create_expression(index, IMMEDIATE), create_expression(location, REGISTER));
+               }
+
                
-               gen_add_instruction(program, old, REG_0, location, CG_DIRECT_ALL);
-               /* update the value of location */
-               if ($3.expression_type == IMMEDIATE)
-                  gen_move_immediate(program, location, $3.value);
-               else
-                  gen_add_instruction(program,
-                                      location,
-                                      REG_0,
-                                      $3.value,
-                                      CG_DIRECT_ALL);
                /* free the memory associated with the IDENTIFIER */
                free($1);
             }
@@ -721,8 +755,35 @@ protect_statement : PROTECT
 
 
 
+iterate_statement : ITER IDENTIFIER
+                  {
+                    t_axe_variable* array = getVariable(program, $2);
+                    if(!array->isArray)
+                      notifyError(AXE_INVALID_VARIABLE);
+                    
+                    t_iteration_statement* iter = (t_iteration_statement*)malloc(sizeof(t_iteration_statement));
+                    iter->ID = strdup($2);
+                    iter->index = gen_load_immediate(program, 0);
+                    iterationStack = addFirst(iterationStack, iter);
 
+                    $1 = create_while_statement();
+                    $1.label_condition = assignNewLabel(program);
+                    $1.label_end = newLabel(program);
 
+                    handle_binary_comparison(program, create_expression(iter->index, REGISTER), create_expression(array->arraySize, IMMEDIATE), _EQ_);
+                    gen_bne_instruction(program, $1.label_end, 0);
+                  }
+                  code_block
+                  {
+                    int index_reg = ((t_iteration_statement*)LDATA(getElementAt(iterationStack, 0)))->index;
+                    gen_addi_instruction(program, index_reg, index_reg, 1);
+                    gen_bt_instruction(program, $1.label_condition, 0);
+                    assignLabel(program, $1.label_end);
+
+                    iterationStack = removeFirst(iterationStack);
+                    free($2);
+                  }
+;
 
 
 
@@ -1201,10 +1262,25 @@ write_statement : WRITE LPAR exp RPAR
 
 exp: NUMBER      { $$ = create_expression ($1, IMMEDIATE); }
    | IDENTIFIER  {
-                     int location;
+                     int location = -1;
+
                     
                     if(alias != NULL && strcmp($1, alias)==0)
                       location = get_symbol_location(program, aliased, 0);
+                    else if(getVariable(program, $1)->isArray && iterationStack != NULL){
+                      int len = getLength(iterationStack);
+                      int i=0;
+                      while(i<len){
+                        t_iteration_statement* iter = ((t_iteration_statement*)LDATA(getElementAt(iterationStack, i)));
+                        if(strcmp($1, iter->ID)==0){
+                          location = loadArrayElement(program, iter->ID, create_expression(iter->index, REGISTER));
+                          break;
+                      }
+                      i=i+1;
+                    }
+                    if(location == -1)
+                      notifyError(AXE_INVALID_VARIABLE);
+                    }
                     else {
 
                      /* get the location of the symbol with the given ID */

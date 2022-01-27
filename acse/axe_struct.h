@@ -104,6 +104,16 @@ typedef struct t_axe_declaration
 } t_axe_declaration;
 
 
+typedef struct t_iteration_statement
+{
+
+  char* ID;
+
+  int index;
+
+} t_iteration_statement;
+
+
 typedef struct t_loopdecreasing_statement
 {
 
@@ -205,6 +215,8 @@ extern t_try_catch_statement create_try_catch_statement();
 extern t_for_statement create_for_statement();
 
 extern t_loopdecreasing_statement create_loop_decreasing_statement();
+
+extern t_iteration_statement create_iteration_statement();
 
 /* create an instance of `t_axe_register' */
 extern t_axe_register *alloc_register(int ID, int indirect);

@@ -88,6 +88,20 @@ t_axe_data * alloc_data(int directiveType, int value, t_axe_label *label)
    return result;
 }
 
+
+t_iteration_statement create_iteration_statement()
+{
+
+  t_iteration_statement statement;
+
+  statement.ID = NULL;
+  statement.index = -1;
+
+  return statement;
+
+}
+
+
 t_while_statement create_while_statement()
 {
    t_while_statement statement;

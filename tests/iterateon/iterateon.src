@@ -1,0 +1,24 @@
+int a[5];
+
+int b[5];
+
+a[0]=0;
+a[1]=1;
+a[2]=2;
+a[3]=3;
+a[4]=4;
+
+iterateon b{
+  b = 1;
+}
+
+iterateon b{
+  write(b);
+}
+
+iterateon a{
+  write(a);
+  iterateon b{
+    write(a+b);
+  }
+}

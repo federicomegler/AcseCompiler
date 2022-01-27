@@ -122,6 +122,7 @@ ID       [a-zA-Z_][a-zA-Z0-9_]*
 "loop_decreasing" { return LOOPDEC; }
 "by"              { return BY; }
 "assert"          { return ASSERT; }
+"iterateon"       { return ITER; }
 
 
 
